@@ -34,7 +34,7 @@ public class App {
                 }
                 System.out.println("*****************");
             }
-            ((HttpURLConnection) conn).disconnect();            
+            ((HttpURLConnection) conn).disconnect();
             final var ok = new java.net.URL(
                     new StringBuilder("http://")
                             .append(System.getenv("AWS_LAMBDA_RUNTIME_API"))
@@ -48,6 +48,12 @@ public class App {
             try (final var os = responsehttp.getOutputStream()) {
                 os.write("ok".getBytes());
                 os.flush();
+            }
+            try (final var is = responsehttp.getInputStream()) {
+                int lee;
+                while ((lee = is.read()) != -1) {
+                    System.out.print((char) lee);
+                }
             }
             responsehttp.disconnect();
         }
