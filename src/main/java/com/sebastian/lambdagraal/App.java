@@ -15,7 +15,7 @@ public class App {
     public static void main(String[] args) throws MalformedURLException, IOException {
         System.out.println("args: " + Arrays.toString(args));
 
-        //while (true) {
+        while (true) {
             System.out.println("crear url");
             final var url = new java.net.URL(
                     new StringBuilder("http://")
@@ -41,15 +41,15 @@ public class App {
                             .append("/2018-06-01/runtime/invocation/")
                             .append(requestid).append("/response")
                             .toString());
-            final var connres = ok.openConnection();            
-            final var responsehttp = (HttpURLConnection) connres;
+            final var responsehttp = (HttpURLConnection) ok.openConnection();
             responsehttp.setRequestMethod("POST");
             responsehttp.setDoOutput(true);
+            responsehttp.connect();
             try (final var os = responsehttp.getOutputStream()) {
                 os.write("ok".getBytes());
                 os.flush();
             }
             responsehttp.disconnect();
-        //}
+        }
     }
 }
