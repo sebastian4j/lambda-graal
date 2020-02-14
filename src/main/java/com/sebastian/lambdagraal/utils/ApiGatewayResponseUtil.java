@@ -42,8 +42,6 @@ public final class ApiGatewayResponseUtil {
         .append("},\"body\":")
         .append(agr.getBody())
         .append("}");
-    System.out.println("enviar");
-    System.out.println(sb.toString());
     return sb.toString();
   }
 }
