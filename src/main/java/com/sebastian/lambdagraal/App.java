@@ -1,61 +1,59 @@
 package com.sebastian.lambdagraal;
 
 import java.io.IOException;
-import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.ServiceLoader;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * demo lambda graalvm.
  *
+ * <p>la intención es no ocupar dependencias para que sea permite envolver la lógica y no limitar la
+ * ejecución.
+ *
  * @author Sebastián Ávila A.
  */
 public class App {
+  private static final Logger LOGGER = Logger.getLogger(App.class.getCanonicalName());
 
-    public static void main(String[] args) throws MalformedURLException, IOException {
-        System.out.println("args: " + Arrays.toString(args));
+  private static final List<LambdaHandler> HANDLERS = new ArrayList<>();
+  private static final List<LambdaService> SERVICES = new ArrayList<>();
 
-        while (true) {
-            System.out.println("crear url");
-            final var url = new java.net.URL(
-                    new StringBuilder("http://")
-                            .append(System.getenv("AWS_LAMBDA_RUNTIME_API"))
-                            .append("/2018-06-01/runtime/invocation/next")
-                            .toString());
-            System.out.println("abrir conexión");
-            final var conn = url.openConnection();
-            final var requestid = conn.getHeaderField("Lambda-Runtime-Aws-Request-Id");
-            System.out.println("requestid: " + requestid);
-            try (final var is = conn.getInputStream()) {
-                int lee;
-                System.out.println("*****************");
-                while ((lee = is.read()) != -1) {
-                    System.out.print((char) lee);
-                }
-                System.out.println("*****************");
-            }
-            ((HttpURLConnection) conn).disconnect();
-            final var ok = new java.net.URL(
-                    new StringBuilder("http://")
-                            .append(System.getenv("AWS_LAMBDA_RUNTIME_API"))
-                            .append("/2018-06-01/runtime/invocation/")
-                            .append(requestid).append("/response")
-                            .toString());
-            final var responsehttp = (HttpURLConnection) ok.openConnection();
-            responsehttp.setRequestMethod("POST");
-            responsehttp.setDoOutput(true);
-            responsehttp.connect();
-            try (final var os = responsehttp.getOutputStream()) {
-                os.write("ok".getBytes());
-                os.flush();
-            }
-            try (final var is = responsehttp.getInputStream()) {
-                int lee;
-                while ((lee = is.read()) != -1) {
-                    System.out.print((char) lee);
-                }
-            }
-            responsehttp.disconnect();
-        }
+  static {
+    System.setProperty("javax.net.ssl.trustStore", "cacerts");
+    System.setProperty("javax.net.ssl.trustStorePassword", "changeit");
+    try {
+      ServiceLoader.load(LambdaHandler.class).forEach(HANDLERS::add);
+      ServiceLoader.load(LambdaService.class).forEach(SERVICES::add);
+    } catch (Exception e) {
+      try {
+        ComunicadorEventos.initError(e);
+        LOGGER.log(Level.SEVERE, "no se pudo iniciar", e);
+      } catch (Exception ex) {
+        LOGGER.log(Level.SEVERE, "error al notificar", ex);
+        throw new IllegalStateException(ex);
+      }
     }
+  }
+
+  public static void main(String[] args) throws MalformedURLException, IOException {
+    while (true) {
+      final var evento = ComunicadorEventos.next();
+      try {
+        final var handler = System.getenv("_HANDLER");
+        for (final var h : HANDLERS) {
+          if (handler.equals(h.getClass().getCanonicalName())) {
+            ComunicadorEventos.ok(h.handle(evento), evento);
+            break;
+          }
+        }
+      } catch (Exception e) {
+        LOGGER.log(Level.SEVERE, "error al invocar post evento", e);
+        ComunicadorEventos.invocationError(evento, e);
+      }
+    }
+  }
 }

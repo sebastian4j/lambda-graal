@@ -1,0 +1,2 @@
+com.sebastian.lambdagraal.services.DynamoService
+com.sebastian.lambdagraal.services.PostgresqlService
