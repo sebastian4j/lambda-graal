@@ -1,7 +1,15 @@
 ### Entrada del Blog: https://javasofias.blogspot.com/2020/02/graalvm-java-11-aws-lambda-postgresql.html
 
-#### ?????
+### ?????
 Este repositorio contiene el código para crear una lambda de AWS usando Java 11 y compilado con GraalVM en forma nativa
+
+Lanzarlo con:
+```
+bash scripts.sh
+```
+luego subir el archivo *function.zip* a la consola de aws lambda
+
+* Requiere Docker
 
 ### Enlaces útiles:
 
